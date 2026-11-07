@@ -1,0 +1,13 @@
+{
+  "name": "nyay-sahayak",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nyay Sahayak — a bilingual (Hindi/English) voice-enabled AI legal assistant for everyday problems in India",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "dev:mock": "MOCK_LLM=1 node dev-server.mjs",
+    "test:cases": "node tests/run_tests.mjs"
+  }
+}
