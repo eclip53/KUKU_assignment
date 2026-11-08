@@ -32,24 +32,35 @@ Stack: plain HTML/CSS/JS frontend and Node.js serverless functions on Vercel. Th
 
 The four-agent Self-RAG design from the notebook is kept. It was re-engineered for serverless, low latency and the free API tier.
 
-```mermaid
+
 flowchart LR
-  U([User: text / voice / photo]) -->|Web Speech or Whisper; pdf.js / Tesseract OCR in browser| FE[Browser app<br/>chat history + memory + case file in localStorage]
-  FE -->|POST /api/chat  last 10 msgs + summary + case file| A1
-  subgraph Vercel function — streamed NDJSON
-    A1[Agent 1 · Intake & Router<br/>gpt-oss-20b · JSON<br/>lang, domain, state, urgency,<br/>lawyer need, case-file additions,<br/>English search query, web?]
-    E[bge-m3 query embedding<br/>HF Inference API]
-    A1 -.parallel.- E
-    A1 --> A2[Agent 2 · Self-RAG retrieval<br/>hybrid BM25 + dense over the handbook<br/>RRF fusion → relevance grading → drop weak passages]
-    E --> A2
-    A2 -->|handbook weak / topic not covered / state-specific| A3[Agent 3 · Web research<br/>Tavily · authority-ranked<br/>India Code › courts › .gov.in › others]
-    A2 --> A4
-    A3 --> A4[Agent 4 · Guidance / Draft / Practice / Explain<br/>gpt-oss-120b · streamed]
-    A4 --> G[Citation Guard<br/>deterministic, 0 tokens]
-  end
-  G -->|tokens, sources, guard, stats| FE
-  FE -->|after the answer, in background| S[/api/summarize<br/>memory agent · gpt-oss-20b/]
-```
+    U(["User: text / voice / photo"]) -->|"Web Speech or Whisper; PDF.js / Tesseract OCR"| FE["Browser app<br/>Chat history + memory + case file in localStorage"]
+
+    FE -->|"POST /api/chat: last 10 messages + summary + case file"| A1
+
+    subgraph V["Vercel Function - streamed NDJSON"]
+        A1["Agent 1: Intake and Router<br/>gpt-oss-20b - JSON<br/>Language, domain, state, urgency<br/>Lawyer need, case-file additions<br/>English search query, web flag"]
+
+        E["bge-m3 query embedding<br/>HF Inference API"]
+
+        A1 -.->|"Parallel embedding"| E
+
+        A1 --> A2["Agent 2: Self-RAG Retrieval<br/>Hybrid BM25 + dense retrieval<br/>Handbook search<br/>RRF fusion + relevance grading<br/>Drop weak passages"]
+
+        E --> A2
+
+        A2 -->|"Weak handbook / uncovered topic / state-specific"| A3["Agent 3: Web Research<br/>Tavily - authority-ranked sources<br/>India Code, courts, government sites, others"]
+
+        A2 --> A4["Agent 4: Guidance / Draft / Practice / Explain<br/>gpt-oss-120b - streamed"]
+
+        A3 --> A4
+
+        A4 --> G["Citation Guard<br/>Deterministic - 0 tokens"]
+    end
+
+    G -->|"Tokens, sources, guard, stats"| FE
+
+    FE -->|"After answer - background request"| S["/api/summarize<br/>Memory Agent - gpt-oss-20b"]
 
 ### What changed from the notebook, and why
 
