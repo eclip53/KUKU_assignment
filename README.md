@@ -33,34 +33,45 @@ Stack: plain HTML/CSS/JS frontend and Node.js serverless functions on Vercel. Th
 The four-agent Self-RAG design from the notebook is kept. It was re-engineered for serverless, low latency and the free API tier.
 
 
-flowchart LR
-    U(["User: text / voice / photo"]) -->|"Web Speech or Whisper; PDF.js / Tesseract OCR"| FE["Browser app<br/>Chat history + memory + case file in localStorage"]
+## 🏗️ Architecture
 
-    FE -->|"POST /api/chat: last 10 messages + summary + case file"| A1
+The four-agent Self-RAG design from the notebook is retained and re-engineered for serverless deployment, low latency, and free-tier API usage.
 
-    subgraph V["Vercel Function - streamed NDJSON"]
-        A1["Agent 1: Intake and Router<br/>gpt-oss-20b - JSON<br/>Language, domain, state, urgency<br/>Lawyer need, case-file additions<br/>English search query, web flag"]
+```mermaid
+flowchart TD
+    U(["User: Text / Voice / Photo"])
+    FE["Browser App<br/>Chat History + Memory + Case File"]
+    
+    U --> FE
 
-        E["bge-m3 query embedding<br/>HF Inference API"]
+    FE -->|"POST /api/chat"| A1
 
-        A1 -.->|"Parallel embedding"| E
+    subgraph V["Vercel Serverless Function - Streamed NDJSON"]
+        A1["Agent 1: Intake and Router<br/>gpt-oss-20b<br/>Language, Domain, State, Urgency"]
 
-        A1 --> A2["Agent 2: Self-RAG Retrieval<br/>Hybrid BM25 + dense retrieval<br/>Handbook search<br/>RRF fusion + relevance grading<br/>Drop weak passages"]
+        E["bge-m3 Query Embedding<br/>HF Inference API"]
+
+        A1 -.-> E
+
+        A1 --> A2["Agent 2: Self-RAG Retrieval<br/>Hybrid BM25 + Dense Retrieval<br/>RRF Fusion + Relevance Grading"]
 
         E --> A2
 
-        A2 -->|"Weak handbook / uncovered topic / state-specific"| A3["Agent 3: Web Research<br/>Tavily - authority-ranked sources<br/>India Code, courts, government sites, others"]
+        A2 -->|"Weak retrieval or state-specific query"| A3["Agent 3: Web Research<br/>Tavily Search<br/>Authority-Ranked Sources"]
 
-        A2 --> A4["Agent 4: Guidance / Draft / Practice / Explain<br/>gpt-oss-120b - streamed"]
+        A2 --> A4["Agent 4: Guidance / Draft / Practice / Explain<br/>gpt-oss-120b"]
 
         A3 --> A4
 
-        A4 --> G["Citation Guard<br/>Deterministic - 0 tokens"]
+        A4 --> G["Citation Guard<br/>Deterministic - Zero Tokens"]
     end
 
-    G -->|"Tokens, sources, guard, stats"| FE
+    G -->|"Answer, Sources, Guard, Stats"| FE
 
-    FE -->|"After answer - background request"| S["/api/summarize<br/>Memory Agent - gpt-oss-20b"]
+    FE -->|"Background request after answer"| S["/api/summarize<br/>Memory Agent - gpt-oss-20b"]
+    
+    S -->|"Updated summary"| FE
+```
 
 ### What changed from the notebook, and why
 
